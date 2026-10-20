@@ -17,7 +17,7 @@ Juggling job hunting on a standard spreadsheet quickly falls apart. Orbit solves
 
 ---
 
-## 🏗️ System Architecture
+## System Architecture
 
 ---
 
