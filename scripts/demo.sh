@@ -3,6 +3,7 @@
 # Needs: Orbit on :8080, Sentinel on :8081, curl.
 set -euo pipefail
 
+
 ORBIT=${ORBIT_URL:-http://localhost:8080}
 SENTINEL=${SENTINEL_URL:-http://localhost:8081}
 EMAIL=${DEMO_EMAIL:-demo@example.com}
