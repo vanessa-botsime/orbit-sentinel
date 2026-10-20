@@ -6,7 +6,7 @@ This ecosystem brings together your core business tracker and an autonomous secu
 
 ---
 
-## 🚀 Why Orbit Beats a Traditional Spreadsheet
+## Why Orbit Beats a Traditional Spreadsheet
 
 Juggling job hunting on a standard spreadsheet quickly falls apart. Orbit solves these core pain points:
 
@@ -21,7 +21,7 @@ Juggling job hunting on a standard spreadsheet quickly falls apart. Orbit solves
 
 ---
 
-## 📁 System Folder Structure
+## System Folder Structure
 
 Following the exact blueprint of your workspace layout, your project repository is organized as follows:
 
@@ -41,7 +41,7 @@ orbit-graduate-system/
 
 ---
 
-## ⚙️ How to Run the Ecosystem Offline
+## How to Run the Ecosystem Offline
 
 This project is fully optimized to run in an offline environment by caching dependencies beforehand.
 
@@ -79,7 +79,7 @@ Open two side-by-side terminal tabs to execute your programs simultaneously:
 
 ---
 
-## 🛡️ Sentinel Threat Detection Matrix
+## Sentinel Threat Detection Matrix
 
 Orbit Sentinel sniffs incoming events streaming through Kafka channels and monitors for critical alerts:
 1. **Failed Login Bursts**: Catches automated brute force attacks if login failures exceed standard metrics.
