@@ -37,7 +37,7 @@ orbit-graduate-system/
 ├── docker-compose.yml              # Services orchestrator (Kafka, Zookeeper, PostgreSQL)
 ├── pom.xml                         # Root configuration manager
 ├── START-HERE.txt                  # Setup workflow checklist
-└── README.md                       # Main ecosystem documentation (This file)
+└── README.md                       # Main ecosystem documentation
 ```
 
 ## How to Run the Ecosystem Offline
