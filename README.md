@@ -25,8 +25,8 @@ Juggling job hunting on a standard spreadsheet quickly falls apart. Orbit solves
 
 Following the exact blueprint of your workspace layout, your project repository is organized as follows:
 
+```text
 orbit-graduate-system/
-
 ├── backend/                        # Upgraded core graduate application tracking service
 ├── orbit-sentinel/                 # Autonomous security audit logging service
 │   ├── scripts/                    # Contains automation scripts (e.g., demo.sh)
@@ -37,9 +37,8 @@ orbit-graduate-system/
 ├── docker-compose.yml              # Services orchestrator (Kafka, Zookeeper, PostgreSQL)
 ├── pom.xml                         # Root configuration manager
 ├── START-HERE.txt                  # Setup workflow checklist
-└── README.md                       # Main ecosystem documentation
-
----
+└── README.md                       # Main ecosystem documentation (This file)
+```
 
 ## How to Run the Ecosystem Offline
 
