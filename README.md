@@ -1,87 +1,85 @@
-# Orbit Graduate System: Event-Driven Tracker & Sentinel Audit Engine
+# Orbit Sentinel: Security Event Monitor
 
-An advanced, event-driven ecosystem designed to streamline graduate job applications and provide enterprise-grade, tamper-evident security auditing. 
+A service that watches the events produced by other systems, keeps a **tamper-evident audit trail**,
+and raises alerts when activity looks suspicious.
 
-This ecosystem brings together your core business tracker and an autonomous security monitor communicating asynchronously via Apache Kafka.
+## The problem
+Every organisation needs to answer "who did what, and when?" and to notice when something looks wrong,
+such as repeated failed logins or an unexpected role change. Many breaches are found late because nobody
+was watching the logs. Sentinel turns raw events into an audit trail and real-time alerts.
 
----
+## Architecture
 
-## Why Orbit Beats a Traditional Spreadsheet
-
-Juggling job hunting on a standard spreadsheet quickly falls apart. Orbit solves these core pain points:
-
-* **Automated Logging**: Spreadsheets require manual tracking for every stage change. Orbit automatically captures application history and timeline events seamlessly.
-* **Proactive Security Auditing**: A spreadsheet has no access history. Orbit streams active authentication changes and system updates directly to an immutable engine, proving exactly who did what.
-* **Granular User Isolation**: On a shared spreadsheet, data can easily be viewed or modified by unauthorized parties. Orbit enforces strict JWT security boundaries—applications are isolated per-user.
-* **Tamper Evidence**: If anyone alters your spreadsheet history, there's no way to know. Orbit's security logs use a cryptographic chain; any database manipulation breaks the chain instantly.
-
----
-
-## System Architecture
-
----
-
-## System Folder Structure
-
-Following the exact blueprint of your workspace layout, your project repository is organized as follows:
-
-```text
-orbit-graduate-system/
-├── backend/                        # Upgraded core graduate application tracking service
-├── orbit-sentinel/                 # Autonomous security audit logging service
-│   ├── scripts/                    # Contains automation scripts (e.g., demo.sh)
-│   ├── src/main/java/              # Core logic (alerts, audit logs, rules, security)
-│   └── src/main/resources/         # Sentinel configuration (application.yml, db scripts)
-├── .env.example                    # Template for environment credentials & JWT secrets
-├── .gitignore                      # Git exclusion rules
-├── docker-compose.yml              # Services orchestrator (Kafka, Zookeeper, PostgreSQL)
-├── pom.xml                         # Root configuration manager
-├── START-HERE.txt                  # Setup workflow checklist
-└── README.md                       # Main ecosystem documentation
+```mermaid
+flowchart LR
+    O[Orbit API] -->|events| K[(Kafka: orbit.events)]
+    K --> C[Sentinel consumer]
+    C --> A[(Audit log<br/>hash-chained, append-only)]
+    C --> R[Rule engine]
+    R --> AL[(Alerts)]
+    R --> W[Discord / Slack webhook]
+    U[Admin / Auditor] -->|JWT| API[Sentinel API]
+    API --> A
+    API --> AL
 ```
 
-## How to Run the Ecosystem Offline
+## Tech stack
+- Java 21, Spring Boot
+- Apache Kafka (event ingestion)
+- PostgreSQL (audit log and alerts), Flyway migrations
+- JWT authentication with role-based access
+- Docker Compose
 
-This project is fully optimized to run in an offline environment by caching dependencies beforehand.
+## Detection rules
+| Rule | Trigger | Severity |
+|---|---|---|
+| `FAILED_LOGIN_BURST` | 5 failed logins for one account within 2 minutes | HIGH |
+| `AFTER_HOURS_LOGIN` | Successful login between 22:00 and 05:00 (Africa/Johannesburg) | MEDIUM |
+| `ROLE_CHANGED` | Any role change | HIGH |
 
-### 1. Boot up the Infrastructure Broker
-From your root workspace folder, boot up your databases and Apache Kafka messaging broker in detached mode:
-```bash
-docker compose up -d
-```
+Thresholds live in `application.yml`. To add a rule, implement `DetectionRule` and annotate it with `@Component`.
 
-### 2. Cache Dependencies (Do this while online)
-Before disconnecting from the internet, run the clean compilation verification in both application roots to download and store your Maven cache:
-```bash
-# Cache Core Tracker
-cd backend
-./mvnw clean verify
+## How the audit trail is protected
+- **Append-only:** a database trigger rejects every `UPDATE` and `DELETE` on `audit_events`, and the entity has no setters.
+- **Hash chain:** each record stores the hash of the previous one plus its own SHA-256 over its content.
+  `GET /api/audit-events/verify` recomputes the whole chain and reports the first record that does not match.
+- **Idempotent:** the unique `event_id` makes Kafka redelivery harmless.
 
-# Cache Sentinel Engine
-cd ../orbit-sentinel
-./mvnw clean verify
-```
+## Access control
+Sentinel verifies the JWTs issued by [orbit-graduate-system](https://github.com/vanessa-botsime/orbit-graduate-system).
 
-### 3. Spin up the Software Services
-Open two side-by-side terminal tabs to execute your programs simultaneously:
+| Role | Access |
+|---|---|
+| `ADMIN` | Read audit log and alerts, verify the chain |
+| `AUDITOR` | Read-only access to audit log and alerts |
+| `USER` | None |
 
-* **Run the Graduate Backend (Port 8080):**
-  ```bash
-  cd backend
-  ./mvnw spring-boot:run
-  ```
-* **Run the Sentinel Engine (Port 8081):**
-  ```bash
-  cd orbit-sentinel
-  ```
-  *(Note: Check your Sentinel README or script instructions if you need to run `./mvnw spring-boot:run` or a dedicated test framework setup here).*
+## API
+| Method | Path | Role |
+|---|---|---|
+| GET | `/api/audit-events?type=&actor=&page=&size=` | ADMIN, AUDITOR |
+| GET | `/api/audit-events/verify` | ADMIN |
+| GET | `/api/alerts` | ADMIN, AUDITOR |
 
----
+## Running locally
+1. Start Orbit's stack first (it provides Kafka on `localhost:9092`) and run Orbit.
+2. `cp .env.example .env`, then set `DB_PASSWORD` and set `JWT_SECRET` to the **same** value Orbit uses.
+3. `docker compose --env-file .env up -d`  (Sentinel's own Postgres on port 5433)
+4. `./mvnw spring-boot:run`  (API on port 8081)
+5. Optional: put a Discord or Slack webhook URL in `ALERT_WEBHOOK_URL`. Without one, alerts are only logged.
+6. Run `scripts/demo.sh` to generate failed logins and application activity, then read `/api/alerts`.
 
-## Sentinel Threat Detection Matrix
+## Security notes
+- Webhook messages and logs strip control characters and break `@mentions`, because actor names come from user input
+- Secrets are read from environment variables and `.env` is git-ignored
+- Parameterised queries only (Spring Data JPA)
+- Sentinel and Orbit share an HMAC secret for simplicity. A production setup would use an identity provider
+  with asymmetric keys (for example OIDC), so Sentinel only needs the public key.
 
-Orbit Sentinel sniffs incoming events streaming through Kafka channels and monitors for critical alerts:
-1. **Failed Login Bursts**: Catches automated brute force attacks if login failures exceed standard metrics.
-2. **After-Hours Actions**: Highlights actions taken during high-risk anomaly time frames (e.g., between midnight and 5 AM).
-3. **Privilege Escalation**: Dispatches emergency notifications to connected Webhooks (Discord/Slack) instantly if a user account role shifts to `ADMIN` or `AUDITOR`.
-4. **Cryptographic Validation**: Links entries sequentially using hash pointers. If log history is compromised or manually deleted in the database layer, the chain invalidates itself immediately.
+## Known limitations
+- No dashboard yet (API only)
+- Tokens stay valid until they expire, even after a role change
+- The audit chain is verified on demand, not continuously
+
+## Status
+In progress. Built as a companion to orbit-graduate-system.
