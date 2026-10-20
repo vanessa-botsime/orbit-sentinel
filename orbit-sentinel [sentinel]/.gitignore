@@ -1,0 +1,17 @@
+# Build output
+target/
+*.class
+*.log
+*.jar
+!.mvn/wrapper/maven-wrapper.jar
+
+# Secrets
+.env
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
